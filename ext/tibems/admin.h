@@ -1,5 +1,5 @@
-#ifndef TIBEMSADMIN_CLIENT_H
-#define TIBEMSADMIN_CLIENT_H
+#ifndef TIBEMS_ADMIN_H
+#define TIBEMS_ADMIN_H
 
 #ifndef HAVE_RB_THREAD_CALL_WITHOUT_GVL
 #ifdef HAVE_RB_THREAD_BLOCKING_REGION
@@ -21,8 +21,8 @@ typedef void rb_unblock_function_t(void *);
 static void *
 rb_thread_call_without_gvl(
    void *(*func)(void *), void *data1,
-  RB_TIBEMSADMIN_UNUSED rb_unblock_function_t *ubf,
-  RB_TIBEMSADMIN_UNUSED void *data2)
+  RB_TIBEMS_UNUSED rb_unblock_function_t *ubf,
+  RB_TIBEMS_UNUSED void *data2)
 {
   void *rv;
 

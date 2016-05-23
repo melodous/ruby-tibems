@@ -1,38 +1,86 @@
+# -*- ruby -*-
+
 require "rake/extensiontask"
-require 'rubygems'
-require 'rubygems/package_task'
+require "rubygems"
+require "hoe"
 
-spec = Gem::Specification.new do |s|
-  s.name = 'tibems'
-  s.version = '0.0.1'
-  s.authors = ['Justo Alonso']
-  s.license = "MIT"
-  s.email = ['justo.alonso@gmail.com']
-  s.homepage = 'http://github.com/jalonsoa/tibems'
-  s.rdoc_options = ["--charset=UTF-8"]
-  s.summary = 'Interface to the tibems C libraries'
+##Hoe.plugin :clean
+##Hoe.plugin :compiler
+##Hoe.plugin :package
 
-  s.files         = `git ls-files`.split($/)
-  s.executables   = s.files.grep(%r{^bin/}) { |f| File.basename(f) }
-  s.test_files    = s.files.grep(%r{^(test|spec|features)/})
-  s.require_paths = ["lib", "ext"]
+Hoe.plugin :git
+Hoe.plugin :ignore
 
-  s.platform = Gem::Platform::RUBY
-  s.extensions = FileList["ext/**/extconf.rb"]
+# Hoe.plugin :gem_prelude_sucks
+# Hoe.plugin :inline
+# Hoe.plugin :racc
+# Hoe.plugin :rcov
+# Hoe.plugin :rubyforge
 
-  s.required_ruby_version = ">= 1.9.3"
+Hoe.spec "tibems" do
+  developer('Justo Alonso', 'justo.alonso@gmail.com')
+  self.readme_file   = 'README.md'
+  self.extra_rdoc_files  = FileList['*.rdoc']
+  self.extra_dev_deps << ['rake-compiler']
+  self.spec_extras = { :extensions => ["ext/tibems/extconf.rb"] }
+  self.urls = [ "https://github.com/jalonsoa/ruby-tibems" ]
+  self.licenses = [ "GPL-3.0" ]
 
-  s.add_development_dependency "bundler", "~> 1.3"
-  s.add_development_dependency "rake", "~> 1.8"
-  s.add_development_dependency "rake-compiler", "~> 1.8"
+
+  extra_dev_deps << ["rake-compiler", "~> 0.8"]
+
+  Rake::ExtensionTask.new('tibems', spec) do |ext|
+    ext.lib_dir = File.join('lib', 'tibems')
+
+    CLEAN.include "lib/tibems/{1.8,1.9}"
+    CLEAN.include "lib/tibems/tibems.rb"
+  end
 end
 
-Gem::PackageTask.new(spec) do |pkg|
-  pkg.need_zip = true
-  pkg.need_tar = true
+## Rake::Task[:test].prerequisites << :compile
+
+include Hoe::Git
+
+desc "Print the current changelog."
+task "changelog" do
+  tag   = ENV["FROM"] || git_tags.last
+  range = [tag, "HEAD"].compact.join ".."
+  cmd   = "git log #{range} '--format=tformat:%B|||%aN|||%aE|||'"
+  now   = Time.new.strftime "%Y-%m-%d"
+
+  changes = `#{cmd}`.split(/\|\|\|/).each_slice(3).map { |msg, author, email|
+              msg.split(/\n/).reject { |s| s.empty? }.first
+            }.flatten.compact
+
+  $changes = Hash.new { |h,k| h[k] = [] }
+
+  codes = {
+    "!" => :major,
+    "+" => :minor,
+    "*" => :minor,
+    "-" => :bug,
+    "?" => :unknown,
+  }
+
+  codes_re = Regexp.escape codes.keys.join
+
+  changes.each do |change|
+    if change =~ /^\s*([#{codes_re}])\s*(.*)/ then
+      code, line = codes[$1], $2
+    else
+      code, line = codes["?"], change.chomp
+    end
+
+    $changes[code] << line
+  end
+
+  puts "=== #{ENV['VERSION'] || 'NEXT'} / #{now}"
+  puts
+  changelog_section :major
+  changelog_section :minor
+  changelog_section :bug
+  changelog_section :unknown
+  puts
 end
 
-Rake::ExtensionTask.new("tibems",spec) do |ext|
-  ext.lib_dir = "lib/tibems"
-  ext.gem_spec = spec
-end
+# vim: syntax=ruby

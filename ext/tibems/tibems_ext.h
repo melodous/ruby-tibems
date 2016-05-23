@@ -1,7 +1,7 @@
-#ifndef TIBEMSADMIN_EXT
-#define TIBEMSADMIN_EXT
+#ifndef TIBEMS_EXT
+#define TIBEMS_EXT
 
-void Init_tibemsadmin(void);
+void Init_tibems(void);
 
 /* tell rbx not to use it's caching compat layer
    by doing this we're making a promise to RBX that
@@ -25,11 +25,11 @@ void Init_tibemsadmin(void);
 #endif
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
-#define RB_TIBEMSADMIN_NORETURN __attribute__ ((noreturn))
-#define RB_TIBEMSADMIN_UNUSED __attribute__ ((unused))
+#define RB_TIBEMS_NORETURN __attribute__ ((noreturn))
+#define RB_TIBEMS_UNUSED __attribute__ ((unused))
 #else
-#define RB_TIBEMSADMIN_NORETURN
-#define RB_TIBEMSADMIN_UNUSED
+#define RB_TIBEMS_NORETURN
+#define RB_TIBEMS_UNUSED
 #endif
 
 #include "admin.h"

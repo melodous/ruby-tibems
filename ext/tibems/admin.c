@@ -10,11 +10,10 @@
 #include <unistd.h>
 #endif
 #include <fcntl.h>
-#include "wait_for_single_fd.h"
 
 VALUE cTibEMSAdmin;
 extern VALUE mTibEMS, cTibEMSError;
-static VALUE sym_queue, sym_topic, sym_producer, sym_consumer, sym_symbolize_keys, sym_as, sym_array, sym_stream;
+static VALUE sym_queue, sym_topic, sym_producer, sym_consumer;
 static ID intern_brackets, intern_merge, intern_merge_bang, intern_new_with_args;
 
 #ifndef HAVE_RB_HASH_DUP
@@ -179,6 +178,72 @@ static VALUE allocate(VALUE klass) {
   return obj;
 }
 
+static VALUE rb_create(VALUE self, VALUE url, VALUE user, VALUE pass) {
+  struct nogvl_create_args args;
+  time_t start_time, end_time, elapsed_time, connect_timeout;
+  tibems_status status = TIBEMS_OK;
+  VALUE rv;
+  GET_ADMIN(self);
+
+  args.url         = NIL_P(url )     ? NULL : StringValueCStr(url);
+  args.user        = NIL_P(user)     ? NULL : StringValueCStr(user);
+  args.passwd      = NIL_P(pass)     ? NULL : StringValueCStr(pass);
+  args.admin       = wrapper->admin;
+
+  if (wrapper->connect_timeout)
+    time(&start_time);
+  rv = (VALUE) rb_thread_call_without_gvl(nogvl_create, &args, RUBY_UBF_IO, 0);
+  if (rv == Qfalse) {
+    while (rv == Qfalse && errno == EINTR) {
+      if (wrapper->connect_timeout) {
+        time(&end_time);
+        /* avoid long connect timeout from system time changes */
+        if (end_time < start_time)
+          start_time = end_time;
+        elapsed_time = end_time - start_time;
+        /* avoid an early timeout due to time truncating milliseconds off the start time */
+        if (elapsed_time > 0)
+          elapsed_time--;
+        if (elapsed_time >= (time_t)wrapper->connect_timeout)
+          break;
+        connect_timeout = wrapper->connect_timeout - elapsed_time;
+        status = tibemsAdmin_SetCommandTimeout(wrapper->admin, connect_timeout * 10000);
+      }
+      errno = 0;
+      rv = (VALUE) rb_thread_call_without_gvl(nogvl_create, &args, RUBY_UBF_IO, 0);
+    }
+    /* restore the connect timeout for reconnecting */
+    if (wrapper->connect_timeout)
+      status = tibemsAdmin_SetCommandTimeout(wrapper->admin, wrapper->connect_timeout * 10000);
+    if (rv == Qfalse || status != TIBEMS_OK)
+      rb_raise_tibems_admin_error(wrapper);
+  }
+
+/* TODO: get server version as long
+  wrapper->server_version = mysql_get_server_version(wrapper->client);
+*/
+  wrapper->connected = 1;
+  return self;
+}
+
+void rb_tibems_admin_set_active_thread(VALUE self) {
+  VALUE thread_current = rb_thread_current();
+  GET_ADMIN(self);
+
+  // see if this connection is still waiting on a result from a previous query
+  if (NIL_P(wrapper->active_thread)) {
+    // mark this connection active
+    wrapper->active_thread = thread_current;
+  } else if (wrapper->active_thread == thread_current) {
+    rb_raise(cTibEMSError, "This connection is still waiting for a result, try again once you have the result");
+  } else {
+    VALUE inspect = rb_inspect(wrapper->active_thread);
+    const char *thr = StringValueCStr(inspect);
+
+    rb_raise(cTibEMSError, "This connection is in use by: %s", thr);
+  }
+}
+
 static VALUE rb_tibems_admin_get_info(VALUE self) {
   tibemsServerInfo serverInfo = TIBEMS_INVALID_ADMIN_ID;
   tibems_status status = TIBEMS_OK;
@@ -239,54 +304,6 @@ static VALUE rb_tibems_admin_get_info(VALUE self) {
   return info;
 }
 
-static VALUE rb_create(VALUE self, VALUE url, VALUE user, VALUE pass) {
-  struct nogvl_create_args args;
-  time_t start_time, end_time, elapsed_time, connect_timeout;
-  tibems_status status = TIBEMS_OK;
-  VALUE rv;
-  GET_ADMIN(self);
-
-  args.url         = NIL_P(url )     ? NULL : StringValueCStr(url);
-  args.user        = NIL_P(user)     ? NULL : StringValueCStr(user);
-  args.passwd      = NIL_P(pass)     ? NULL : StringValueCStr(pass);
-  args.admin       = wrapper->admin;
-
-  if (wrapper->connect_timeout)
-    time(&start_time);
-  rv = (VALUE) rb_thread_call_without_gvl(nogvl_create, &args, RUBY_UBF_IO, 0);
-  if (rv == Qfalse) {
-    while (rv == Qfalse && errno == EINTR) {
-      if (wrapper->connect_timeout) {
-        time(&end_time);
-        /* avoid long connect timeout from system time changes */
-        if (end_time < start_time)
-          start_time = end_time;
-        elapsed_time = end_time - start_time;
-        /* avoid an early timeout due to time truncating milliseconds off the start time */
-        if (elapsed_time > 0)
-          elapsed_time--;
-        if (elapsed_time >= (time_t)wrapper->connect_timeout)
-          break;
-        connect_timeout = wrapper->connect_timeout - elapsed_time;
-        status = tibemsAdmin_SetCommandTimeout(wrapper->admin, connect_timeout * 10000);
-      }
-      errno = 0;
-      rv = (VALUE) rb_thread_call_without_gvl(nogvl_create, &args, RUBY_UBF_IO, 0);
-    }
-    /* restore the connect timeout for reconnecting */
-    if (wrapper->connect_timeout)
-      status = tibemsAdmin_SetCommandTimeout(wrapper->admin, wrapper->connect_timeout * 10000);
-    if (rv == Qfalse || status != TIBEMS_OK)
-      rb_raise_tibems_admin_error(wrapper);
-  }
-
-/* TODO: get server version as long
-  wrapper->server_version = mysql_get_server_version(wrapper->client);
-*/
-  wrapper->connected = 1;
-  return self;
-}
-
 /*
  * Immediately disconnect from the server; normally the garbage collector
  * will disconnect automatically when a connection is no longer needed.
@@ -303,24 +320,6 @@ static VALUE rb_tibems_admin_close(VALUE self) {
   }
 
   return Qnil;
-}
-
-void rb_tibems_admin_set_active_thread(VALUE self) {
-  VALUE thread_current = rb_thread_current();
-  GET_ADMIN(self);
-
-  // see if this connection is still waiting on a result from a previous query
-  if (NIL_P(wrapper->active_thread)) {
-    // mark this connection active
-    wrapper->active_thread = thread_current;
-  } else if (wrapper->active_thread == thread_current) {
-    rb_raise(cTibEMSError, "This connection is still waiting for a result, try again once you have the result");
-  } else {
-    VALUE inspect = rb_inspect(wrapper->active_thread);
-    const char *thr = StringValueCStr(inspect);
-
-    rb_raise(cTibEMSError, "This connection is in use by: %s", thr);
-  }
 }
 
 static VALUE initialize_ext(VALUE self) {
@@ -354,10 +353,6 @@ void init_tibems_admin() {
   sym_topic           = ID2SYM(rb_intern("topic"));
   sym_producer        = ID2SYM(rb_intern("producer"));
   sym_consumer        = ID2SYM(rb_intern("consumer"));
-  sym_symbolize_keys  = ID2SYM(rb_intern("symbolize_keys"));
-  sym_as              = ID2SYM(rb_intern("as"));
-  sym_array           = ID2SYM(rb_intern("array"));
-  sym_stream          = ID2SYM(rb_intern("stream"));
 
   intern_brackets = rb_intern("[]");
   intern_merge = rb_intern("merge");
