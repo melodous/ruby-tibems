@@ -103,7 +103,7 @@ static void *nogvl_init(void *ptr) {
   tibems_status status = TIBEMS_OK;
 
   /* init error context */
-  status = tibemsErrorContext_Create(wrapper->errorctx);
+  status = tibemsErrorContext_Create(&(wrapper->errorctx));
 
   if (status != TIBEMS_OK) {
     rb_raise(cTibEMSError, "unable to create tibems error context"); \
@@ -347,7 +347,7 @@ void init_tibems_admin() {
   rb_define_method(cTibEMSAdmin, "get_info", rb_tibems_admin_get_info, 0);
 
   rb_define_private_method(cTibEMSAdmin, "initialize_ext", initialize_ext, 0);
-  rb_define_private_method(cTibEMSAdmin, "create", rb_create, 7);
+  rb_define_private_method(cTibEMSAdmin, "create", rb_create, 3);
 
   sym_queue           = ID2SYM(rb_intern("queue"));
   sym_topic           = ID2SYM(rb_intern("topic"));
