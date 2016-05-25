@@ -247,7 +247,7 @@ void rb_tibems_admin_set_active_thread(VALUE self) {
 static VALUE rb_tibems_admin_get_info(VALUE self) {
   tibemsServerInfo serverInfo = TIBEMS_INVALID_ADMIN_ID;
   tibems_status status = TIBEMS_OK;
-  tibems_int                  count;
+  tibems_int    queue_count, topic_count, producer_count, consumer_count;
   VALUE info;
 
   GET_ADMIN(self);
@@ -261,45 +261,21 @@ static VALUE rb_tibems_admin_get_info(VALUE self) {
     return Qnil;
   }
 
-  status = tibemsServerInfo_GetQueueCount(serverInfo, &count);
-  if (status != TIBEMS_OK) {
+  info = Qnil;
+  if ((TIBEMS_OK == tibemsServerInfo_GetQueueCount(serverInfo, &queue_count))
+      && (TIBEMS_OK == tibemsServerInfo_GetTopicCount(serverInfo, &topic_count))
+      && (TIBEMS_OK == tibemsServerInfo_GetProducerCount(serverInfo, &producer_count))
+      && (TIBEMS_OK == tibemsServerInfo_GetConsumerCount(serverInfo, &consumer_count))) {
+    info = rb_hash_new();
+    rb_hash_aset(info, sym_queue, LONG2FIX(queue_count));
+    rb_hash_aset(info, sym_producer, LONG2FIX(topic_count));
+    rb_hash_aset(info, sym_topic, LONG2FIX(producer_count));
+    rb_hash_aset(info, sym_consumer, LONG2FIX(consumer_count));
+    tibemsServerInfo_Destroy(serverInfo);
+  } else {
     tibemsServerInfo_Destroy(serverInfo);
     rb_raise_tibems_admin_error(wrapper);
-    return Qnil;
   }
-
-  info = rb_hash_new();
-  rb_hash_aset(info, sym_queue, LONG2FIX(count));
-
-  status = tibemsServerInfo_GetTopicCount(serverInfo, &count);
-  if (status != TIBEMS_OK)
-  {
-    tibemsServerInfo_Destroy(serverInfo);
-    rb_raise_tibems_admin_error(wrapper);
-    return Qnil;
-  }
-
-  rb_hash_aset(info, sym_topic, LONG2FIX(count));
-
-  status = tibemsServerInfo_GetProducerCount(serverInfo, &count);
-  if (status != TIBEMS_OK)
-  {
-    tibemsServerInfo_Destroy(serverInfo);
-    rb_raise_tibems_admin_error(wrapper);
-    return Qnil;
-  }
-  rb_hash_aset(info, sym_producer, LONG2FIX(count));
-
-  status = tibemsServerInfo_GetConsumerCount(serverInfo, &count);
-  if (status != TIBEMS_OK)
-  {
-    tibemsServerInfo_Destroy(serverInfo);
-    rb_raise_tibems_admin_error(wrapper);
-    return Qnil;
-  }
-  rb_hash_aset(info, sym_consumer, LONG2FIX(count));
-
-  tibemsServerInfo_Destroy(serverInfo);
 
   return info;
 }
