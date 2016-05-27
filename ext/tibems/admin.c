@@ -13,7 +13,11 @@
 
 VALUE cTibEMSAdmin;
 extern VALUE mTibEMS, cTibEMSError;
-static VALUE sym_queue, sym_topic, sym_producer, sym_consumer;
+static VALUE sym_queue, sym_topic, sym_producer, sym_consumer, sym_queues, sym_topics;
+static VALUE sym_dest_name, sym_dest_deliveredMessageCount, sym_dest_flowControlMaxBytes,
+  sym_dest_maxBytes, sym_dest_maxMsgs, sym_dest_pendingMessageCount, sym_dest_pendingMessageSize,
+  sym_dest_pendingPersistentMessageCount, sym_dest_activeDurableCount, sym_dest_durableCount;
+
 static ID intern_brackets, intern_merge, intern_merge_bang, intern_new_with_args;
 
 #ifndef HAVE_RB_HASH_DUP
@@ -34,7 +38,7 @@ VALUE rb_hash_dup(VALUE other) {
   }
 
 struct nogvl_create_args {
-  tibemsAdmin admin;
+  tibemsAdmin *admin;
   const char *url;
   const char *user;
   const char *passwd;
@@ -116,7 +120,7 @@ static void *nogvl_create(void *ptr) {
   struct nogvl_create_args *args = ptr;
   tibems_status status = TIBEMS_OK;
 
-  status = tibemsAdmin_Create(&(args->admin), args->url,
+  status = tibemsAdmin_Create(args->admin, args->url,
                               args->user, args->passwd, 0);
 
   return (void *)((status==TIBEMS_OK) ? Qtrue : Qfalse);
@@ -133,7 +137,6 @@ static void *nogvl_close(void *ptr) {
       /* TODO: raise error */
     }
 
-    xfree(&(wrapper->admin));
     wrapper->admin = TIBEMS_INVALID_ADMIN_ID;
     wrapper->connected = 0;
     wrapper->active_thread = Qnil;
@@ -188,7 +191,7 @@ static VALUE rb_create(VALUE self, VALUE url, VALUE user, VALUE pass) {
   args.url         = NIL_P(url )     ? NULL : StringValueCStr(url);
   args.user        = NIL_P(user)     ? NULL : StringValueCStr(user);
   args.passwd      = NIL_P(pass)     ? NULL : StringValueCStr(pass);
-  args.admin       = wrapper->admin;
+  args.admin       = &(wrapper->admin);
 
   if (wrapper->connect_timeout)
     time(&start_time);
@@ -244,11 +247,92 @@ void rb_tibems_admin_set_active_thread(VALUE self) {
   }
 }
 
+static VALUE rb_tibems_admin_get_queue_stats(VALUE self, tibemsQueueInfo  queueInfo) {
+  tibems_status status = TIBEMS_OK;
+  tibems_long dest_deliveredMessageCount, dest_flowControlMaxBytes, dest_maxBytes, dest_maxMsgs, dest_pendingMessageCount, dest_pendingMessageSize, dest_pendingPersistentMessageCount;
+  VALUE stats;
+  char nameBuf[1024];
+
+  GET_ADMIN(self);
+
+  REQUIRE_CONNECTED(wrapper);
+
+  status = tibemsQueueInfo_GetName(queueInfo, nameBuf, sizeof(nameBuf));
+  if (status != TIBEMS_OK) {
+    rb_raise_tibems_admin_error(wrapper);
+  }
+
+  if ((TIBEMS_OK == tibemsQueueInfo_GetDeliveredMessageCount(queueInfo, &dest_deliveredMessageCount))
+      && (TIBEMS_OK == tibemsQueueInfo_GetFlowControlMaxBytes(queueInfo, &dest_flowControlMaxBytes))
+      && (TIBEMS_OK == tibemsQueueInfo_GetMaxBytes(queueInfo, &dest_maxBytes))
+      && (TIBEMS_OK == tibemsQueueInfo_GetMaxMsgs(queueInfo, &dest_maxMsgs))
+      && (TIBEMS_OK == tibemsQueueInfo_GetPendingMessageCount(queueInfo, &dest_pendingMessageCount))
+      && (TIBEMS_OK == tibemsQueueInfo_GetPendingMessageSize(queueInfo, &dest_pendingMessageSize))
+      && (TIBEMS_OK == tibemsQueueInfo_GetPendingPersistentMessageCount(queueInfo, &dest_pendingPersistentMessageCount))) {
+    stats = rb_hash_new();
+    rb_hash_aset(stats, sym_dest_name, rb_str_new2(nameBuf));
+    rb_hash_aset(stats, sym_dest_deliveredMessageCount, LONG2FIX(&dest_deliveredMessageCount));
+    rb_hash_aset(stats, sym_dest_flowControlMaxBytes, LONG2FIX(dest_flowControlMaxBytes));
+    rb_hash_aset(stats, sym_dest_maxBytes, LONG2FIX(dest_maxBytes));
+    rb_hash_aset(stats, sym_dest_maxMsgs, LONG2FIX(dest_maxMsgs));
+    rb_hash_aset(stats, sym_dest_pendingMessageCount, LONG2FIX(dest_pendingMessageCount));
+    rb_hash_aset(stats, sym_dest_pendingMessageSize, LONG2FIX(dest_pendingMessageSize));
+    rb_hash_aset(stats, sym_dest_pendingPersistentMessageCount, LONG2FIX(dest_pendingPersistentMessageCount));
+    return stats;
+  } else {
+    return Qnil;
+  }
+}
+
+static VALUE rb_tibems_admin_get_topic_stats(VALUE self, tibemsTopicInfo topicInfo) {
+  tibems_status status = TIBEMS_OK;
+  tibems_int  dest_activeDurableCount, dest_durableCount;
+  tibems_long dest_flowControlMaxBytes, dest_maxBytes,
+              dest_maxMsgs, dest_pendingMessageCount, dest_pendingMessageSize, dest_pendingPersistentMessageCount;
+  VALUE stats;
+  char nameBuf[1024];
+
+  GET_ADMIN(self);
+
+  REQUIRE_CONNECTED(wrapper);
+
+  status = tibemsTopicInfo_GetName(topicInfo, nameBuf, sizeof(nameBuf));
+  if (status != TIBEMS_OK) {
+    rb_raise_tibems_admin_error(wrapper);
+  }
+
+  if ((TIBEMS_OK == tibemsTopicInfo_GetActiveDurableCount(topicInfo, &dest_activeDurableCount))
+      && (TIBEMS_OK == tibemsTopicInfo_GetDurableCount(topicInfo, &dest_durableCount))
+      && (TIBEMS_OK == tibemsTopicInfo_GetFlowControlMaxBytes(topicInfo, &dest_flowControlMaxBytes))
+      && (TIBEMS_OK == tibemsTopicInfo_GetMaxBytes(topicInfo, &dest_maxBytes))
+      && (TIBEMS_OK == tibemsTopicInfo_GetMaxMsgs(topicInfo, &dest_maxMsgs))
+      && (TIBEMS_OK == tibemsTopicInfo_GetPendingMessageCount(topicInfo, &dest_pendingMessageCount))
+      && (TIBEMS_OK == tibemsTopicInfo_GetPendingMessageSize(topicInfo, &dest_pendingMessageSize))
+      && (TIBEMS_OK == tibemsTopicInfo_GetPendingPersistentMessageCount(topicInfo, &dest_pendingPersistentMessageCount))) {
+    stats = rb_hash_new();
+    rb_hash_aset(stats, sym_dest_name, rb_str_new2(nameBuf));
+    rb_hash_aset(stats, sym_dest_activeDurableCount, LONG2FIX(dest_activeDurableCount));
+    rb_hash_aset(stats, sym_dest_durableCount, LONG2FIX(dest_durableCount));
+    rb_hash_aset(stats, sym_dest_flowControlMaxBytes, LONG2FIX(dest_flowControlMaxBytes));
+    rb_hash_aset(stats, sym_dest_maxBytes, LONG2FIX(dest_maxBytes));
+    rb_hash_aset(stats, sym_dest_maxMsgs, LONG2FIX(dest_maxMsgs));
+    rb_hash_aset(stats, sym_dest_pendingMessageCount, LONG2FIX(dest_pendingMessageCount));
+    rb_hash_aset(stats, sym_dest_pendingMessageSize, LONG2FIX(dest_pendingMessageSize));
+    rb_hash_aset(stats, sym_dest_pendingPersistentMessageCount, LONG2FIX(dest_pendingPersistentMessageCount));
+    return stats;
+  } else {
+    return Qnil;
+  }
+}
+
 static VALUE rb_tibems_admin_get_info(VALUE self) {
   tibemsServerInfo serverInfo = TIBEMS_INVALID_ADMIN_ID;
+  tibemsQueueInfo  queueInfo  = TIBEMS_INVALID_ADMIN_ID;
+  tibemsTopicInfo  topicInfo  = TIBEMS_INVALID_ADMIN_ID;
+  tibemsCollection destInfos;
   tibems_status status = TIBEMS_OK;
   tibems_int    queue_count, topic_count, producer_count, consumer_count;
-  VALUE info;
+  VALUE info, queues, topics, stats;
 
   GET_ADMIN(self);
 
@@ -268,14 +352,110 @@ static VALUE rb_tibems_admin_get_info(VALUE self) {
       && (TIBEMS_OK == tibemsServerInfo_GetConsumerCount(serverInfo, &consumer_count))) {
     info = rb_hash_new();
     rb_hash_aset(info, sym_queue, LONG2FIX(queue_count));
-    rb_hash_aset(info, sym_producer, LONG2FIX(topic_count));
-    rb_hash_aset(info, sym_topic, LONG2FIX(producer_count));
+    rb_hash_aset(info, sym_topic, LONG2FIX(topic_count));
+    rb_hash_aset(info, sym_producer, LONG2FIX(producer_count));
     rb_hash_aset(info, sym_consumer, LONG2FIX(consumer_count));
     tibemsServerInfo_Destroy(serverInfo);
   } else {
     tibemsServerInfo_Destroy(serverInfo);
     rb_raise_tibems_admin_error(wrapper);
   }
+
+  // Get Queue Stats
+  status = tibemsAdmin_GetQueues(wrapper->admin, &destInfos, ">", TIBEMS_DEST_GET_NOTEMP);
+
+  if (status != TIBEMS_OK) {
+    rb_raise_tibems_admin_error(wrapper);
+    return Qnil;
+  }
+
+  status = tibemsCollection_GetFirst(destInfos, (&queueInfo));
+
+  if (status != TIBEMS_OK) {
+    tibemsCollection_Destroy(destInfos);
+    rb_raise_tibems_admin_error(wrapper);
+  }
+
+  stats = rb_tibems_admin_get_queue_stats(self,queueInfo);
+
+  if (stats == Qnil) {
+    tibemsQueueInfo_Destroy(queueInfo);
+    tibemsCollection_Destroy(destInfos);
+    rb_raise_tibems_admin_error(wrapper);
+  }
+
+  queues = rb_ary_new();
+  rb_ary_push(queues, stats);
+
+  while (TIBEMS_NOT_FOUND != (status = tibemsCollection_GetNext(destInfos, &queueInfo))) {
+    if (status != TIBEMS_OK) {
+      tibemsCollection_Destroy(destInfos);
+      rb_raise_tibems_admin_error(wrapper);
+    }
+
+    stats = rb_tibems_admin_get_queue_stats(self,queueInfo);
+
+    if (stats == Qnil) {
+      tibemsQueueInfo_Destroy(queueInfo);
+      tibemsCollection_Destroy(destInfos);
+      rb_raise_tibems_admin_error(wrapper);
+    }
+
+    rb_ary_push(queues, stats);
+
+    tibemsQueueInfo_Destroy(queueInfo);
+  }
+
+  tibemsCollection_Destroy(destInfos);
+  rb_hash_aset(info, sym_queues, queues);
+
+  // Get Topic Stats
+  status = tibemsAdmin_GetTopics(wrapper->admin, &destInfos, ">", TIBEMS_DEST_GET_NOTEMP);
+
+  if (status != TIBEMS_OK) {
+    rb_raise_tibems_admin_error(wrapper);
+    return Qnil;
+  }
+
+  status = tibemsCollection_GetFirst(destInfos, (&topicInfo));
+
+  if (status != TIBEMS_OK) {
+    tibemsCollection_Destroy(destInfos);
+    rb_raise_tibems_admin_error(wrapper);
+  }
+
+  stats = rb_tibems_admin_get_topic_stats(self,topicInfo);
+
+  if (stats == Qnil) {
+    tibemsTopicInfo_Destroy(topicInfo);
+    tibemsCollection_Destroy(destInfos);
+    rb_raise_tibems_admin_error(wrapper);
+  }
+
+  topics = rb_ary_new();
+  rb_ary_push(topics, stats);
+
+  while (TIBEMS_NOT_FOUND != (status = tibemsCollection_GetNext(destInfos, &topicInfo))) {
+    if (status != TIBEMS_OK) {
+      tibemsCollection_Destroy(destInfos);
+      rb_raise_tibems_admin_error(wrapper);
+    }
+
+    stats = rb_tibems_admin_get_topic_stats(self,topicInfo);
+
+    if (stats == Qnil) {
+      tibemsQueueInfo_Destroy(topicInfo);
+      tibemsCollection_Destroy(destInfos);
+      rb_raise_tibems_admin_error(wrapper);
+    }
+
+    rb_ary_push(topics, stats);
+
+    tibemsQueueInfo_Destroy(topicInfo);
+  }
+
+  tibemsCollection_Destroy(destInfos);
+  rb_hash_aset(info, sym_topics, topics);
 
   return info;
 }
@@ -329,6 +509,19 @@ void init_tibems_admin() {
   sym_topic           = ID2SYM(rb_intern("topic"));
   sym_producer        = ID2SYM(rb_intern("producer"));
   sym_consumer        = ID2SYM(rb_intern("consumer"));
+  sym_queues          = ID2SYM(rb_intern("queues"));
+  sym_topics          = ID2SYM(rb_intern("topics"));
+
+  sym_dest_name                  = ID2SYM(rb_intern("name"));
+  sym_dest_deliveredMessageCount = ID2SYM(rb_intern("deliveredMessageCount"));
+  sym_dest_flowControlMaxBytes   = ID2SYM(rb_intern("flowControlMaxBytes"));
+  sym_dest_maxBytes              = ID2SYM(rb_intern("maxBytes"));
+  sym_dest_maxMsgs               = ID2SYM(rb_intern("maxMsgs"));
+  sym_dest_pendingMessageCount   = ID2SYM(rb_intern("pendingMessageCount"));
+  sym_dest_pendingMessageSize    = ID2SYM(rb_intern("pendingMessageSize"));
+  sym_dest_activeDurableCount    = ID2SYM(rb_intern("activeDurableCount"));
+  sym_dest_durableCount          = ID2SYM(rb_intern("durableCount"));
+  sym_dest_pendingPersistentMessageCount = ID2SYM(rb_intern("pendingPersistentMess"));
 
   intern_brackets = rb_intern("[]");
   intern_merge = rb_intern("merge");
