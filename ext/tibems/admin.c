@@ -16,7 +16,9 @@ extern VALUE mTibEMS, cTibEMSError;
 static VALUE sym_queue, sym_topic, sym_producer, sym_consumer, sym_queues, sym_topics;
 static VALUE sym_dest_name, sym_dest_deliveredMessageCount, sym_dest_flowControlMaxBytes,
   sym_dest_maxBytes, sym_dest_maxMsgs, sym_dest_pendingMessageCount, sym_dest_pendingMessageSize,
-  sym_dest_pendingPersistentMessageCount, sym_dest_activeDurableCount, sym_dest_durableCount;
+  sym_dest_pendingPersistentMessageCount, sym_dest_activeDurableCount, sym_dest_durableCount,
+  sym_dest_receiverCount, sym_dest_subscriberCount, sym_dest_byteRate, sym_dest_messageRate,
+  sym_dest_totalBytes, sym_dest_totalMessages, sym_inbound, sym_outbound;
 
 static ID intern_brackets, intern_merge, intern_merge_bang, intern_new_with_args;
 
@@ -249,8 +251,12 @@ void rb_tibems_admin_set_active_thread(VALUE self) {
 
 static VALUE rb_tibems_admin_get_queue_stats(VALUE self, tibemsQueueInfo  queueInfo) {
   tibems_status status = TIBEMS_OK;
-  tibems_long dest_deliveredMessageCount, dest_flowControlMaxBytes, dest_maxBytes, dest_maxMsgs, dest_pendingMessageCount, dest_pendingMessageSize, dest_pendingPersistentMessageCount;
-  VALUE stats;
+  tibems_long dest_deliveredMessageCount, dest_flowControlMaxBytes, dest_maxBytes,
+              dest_maxMsgs, dest_pendingMessageCount, dest_pendingMessageSize,
+              dest_pendingPersistentMessageCount;
+  tibems_int dest_receiverCount;
+  tibemsStatData statData;
+  VALUE info;
   char nameBuf[1024];
 
   GET_ADMIN(self);
@@ -268,17 +274,57 @@ static VALUE rb_tibems_admin_get_queue_stats(VALUE self, tibemsQueueInfo  queueI
       && (TIBEMS_OK == tibemsQueueInfo_GetMaxMsgs(queueInfo, &dest_maxMsgs))
       && (TIBEMS_OK == tibemsQueueInfo_GetPendingMessageCount(queueInfo, &dest_pendingMessageCount))
       && (TIBEMS_OK == tibemsQueueInfo_GetPendingMessageSize(queueInfo, &dest_pendingMessageSize))
-      && (TIBEMS_OK == tibemsQueueInfo_GetPendingPersistentMessageCount(queueInfo, &dest_pendingPersistentMessageCount))) {
-    stats = rb_hash_new();
-    rb_hash_aset(stats, sym_dest_name, rb_str_new2(nameBuf));
-    rb_hash_aset(stats, sym_dest_deliveredMessageCount, LONG2FIX(&dest_deliveredMessageCount));
-    rb_hash_aset(stats, sym_dest_flowControlMaxBytes, LONG2FIX(dest_flowControlMaxBytes));
-    rb_hash_aset(stats, sym_dest_maxBytes, LONG2FIX(dest_maxBytes));
-    rb_hash_aset(stats, sym_dest_maxMsgs, LONG2FIX(dest_maxMsgs));
-    rb_hash_aset(stats, sym_dest_pendingMessageCount, LONG2FIX(dest_pendingMessageCount));
-    rb_hash_aset(stats, sym_dest_pendingMessageSize, LONG2FIX(dest_pendingMessageSize));
-    rb_hash_aset(stats, sym_dest_pendingPersistentMessageCount, LONG2FIX(dest_pendingPersistentMessageCount));
-    return stats;
+      && (TIBEMS_OK == tibemsQueueInfo_GetPendingPersistentMessageCount(queueInfo, &dest_pendingPersistentMessageCount))
+      && (TIBEMS_OK == tibemsQueueInfo_GetReceiverCount(queueInfo, &dest_receiverCount))) {
+    info = rb_hash_new();
+    rb_hash_aset(info, sym_dest_name, rb_str_new2(nameBuf));
+    rb_hash_aset(info, sym_dest_deliveredMessageCount, LONG2FIX(dest_deliveredMessageCount));
+    rb_hash_aset(info, sym_dest_flowControlMaxBytes, LONG2FIX(dest_flowControlMaxBytes));
+    rb_hash_aset(info, sym_dest_maxBytes, LONG2FIX(dest_maxBytes));
+    rb_hash_aset(info, sym_dest_maxMsgs, LONG2FIX(dest_maxMsgs));
+    rb_hash_aset(info, sym_dest_pendingMessageCount, LONG2FIX(dest_pendingMessageCount));
+    rb_hash_aset(info, sym_dest_pendingMessageSize, LONG2FIX(dest_pendingMessageSize));
+    rb_hash_aset(info, sym_dest_pendingPersistentMessageCount, LONG2FIX(dest_pendingPersistentMessageCount));
+    rb_hash_aset(info, sym_dest_receiverCount, LONG2FIX(dest_receiverCount));
+
+    VALUE stats;
+    tibems_long dest_byteRate, dest_messageRate, dest_totalBytes, dest_totalMessages;
+
+    if ((TIBEMS_OK == tibemsQueueInfo_GetOutboundStatistics(queueInfo, &statData))
+        && (TIBEMS_OK == tibemsStatData_GetByteRate(statData, &dest_byteRate))
+        && (TIBEMS_OK == tibemsStatData_GetMessageRate(statData, &dest_messageRate))
+        && (TIBEMS_OK == tibemsStatData_GetTotalBytes(statData, &dest_totalBytes))
+        && (TIBEMS_OK == tibemsStatData_GetTotalMessages(statData, &dest_totalMessages))) {
+
+        stats = rb_hash_new();
+        rb_hash_aset(stats, sym_dest_byteRate, LONG2FIX(dest_byteRate));
+        rb_hash_aset(stats, sym_dest_messageRate, LONG2FIX(dest_messageRate));
+        rb_hash_aset(stats, sym_dest_totalBytes, LONG2FIX(dest_totalBytes));
+        rb_hash_aset(stats, sym_dest_totalMessages, LONG2FIX(dest_totalMessages));
+
+        rb_hash_aset(info, sym_outbound, stats);
+    } else {
+      rb_raise_tibems_admin_error(wrapper);
+    }
+
+    if ((TIBEMS_OK == tibemsQueueInfo_GetInboundStatistics(queueInfo, &statData))
+        && (TIBEMS_OK == tibemsStatData_GetByteRate(statData, &dest_byteRate))
+        && (TIBEMS_OK == tibemsStatData_GetMessageRate(statData, &dest_messageRate))
+        && (TIBEMS_OK == tibemsStatData_GetTotalBytes(statData, &dest_totalBytes))
+        && (TIBEMS_OK == tibemsStatData_GetTotalMessages(statData, &dest_totalMessages))) {
+
+        stats = rb_hash_new();
+        rb_hash_aset(stats, sym_dest_byteRate, LONG2FIX(dest_byteRate));
+        rb_hash_aset(stats, sym_dest_messageRate, LONG2FIX(dest_messageRate));
+        rb_hash_aset(stats, sym_dest_totalBytes, LONG2FIX(dest_totalBytes));
+        rb_hash_aset(stats, sym_dest_totalMessages, LONG2FIX(dest_totalMessages));
+
+        rb_hash_aset(info, sym_inbound, stats);
+    } else {
+      rb_raise_tibems_admin_error(wrapper);
+    }
+
+    return info;
   } else {
     return Qnil;
   }
@@ -286,10 +332,12 @@ static VALUE rb_tibems_admin_get_queue_stats(VALUE self, tibemsQueueInfo  queueI
 
 static VALUE rb_tibems_admin_get_topic_stats(VALUE self, tibemsTopicInfo topicInfo) {
   tibems_status status = TIBEMS_OK;
-  tibems_int  dest_activeDurableCount, dest_durableCount;
+  tibems_int  dest_activeDurableCount, dest_durableCount, dest_subscriberCount;
   tibems_long dest_flowControlMaxBytes, dest_maxBytes,
-              dest_maxMsgs, dest_pendingMessageCount, dest_pendingMessageSize, dest_pendingPersistentMessageCount;
-  VALUE stats;
+              dest_maxMsgs, dest_pendingMessageCount, dest_pendingMessageSize,
+              dest_pendingPersistentMessageCount;
+  tibemsStatData statData;
+  VALUE info;
   char nameBuf[1024];
 
   GET_ADMIN(self);
@@ -308,18 +356,57 @@ static VALUE rb_tibems_admin_get_topic_stats(VALUE self, tibemsTopicInfo topicIn
       && (TIBEMS_OK == tibemsTopicInfo_GetMaxMsgs(topicInfo, &dest_maxMsgs))
       && (TIBEMS_OK == tibemsTopicInfo_GetPendingMessageCount(topicInfo, &dest_pendingMessageCount))
       && (TIBEMS_OK == tibemsTopicInfo_GetPendingMessageSize(topicInfo, &dest_pendingMessageSize))
-      && (TIBEMS_OK == tibemsTopicInfo_GetPendingPersistentMessageCount(topicInfo, &dest_pendingPersistentMessageCount))) {
-    stats = rb_hash_new();
-    rb_hash_aset(stats, sym_dest_name, rb_str_new2(nameBuf));
-    rb_hash_aset(stats, sym_dest_activeDurableCount, LONG2FIX(dest_activeDurableCount));
-    rb_hash_aset(stats, sym_dest_durableCount, LONG2FIX(dest_durableCount));
-    rb_hash_aset(stats, sym_dest_flowControlMaxBytes, LONG2FIX(dest_flowControlMaxBytes));
-    rb_hash_aset(stats, sym_dest_maxBytes, LONG2FIX(dest_maxBytes));
-    rb_hash_aset(stats, sym_dest_maxMsgs, LONG2FIX(dest_maxMsgs));
-    rb_hash_aset(stats, sym_dest_pendingMessageCount, LONG2FIX(dest_pendingMessageCount));
-    rb_hash_aset(stats, sym_dest_pendingMessageSize, LONG2FIX(dest_pendingMessageSize));
-    rb_hash_aset(stats, sym_dest_pendingPersistentMessageCount, LONG2FIX(dest_pendingPersistentMessageCount));
-    return stats;
+      && (TIBEMS_OK == tibemsTopicInfo_GetPendingPersistentMessageCount(topicInfo, &dest_pendingPersistentMessageCount))
+      && (TIBEMS_OK == tibemsTopicInfo_GetSubscriberCount(topicInfo, &dest_subscriberCount))) {
+    info = rb_hash_new();
+    rb_hash_aset(info, sym_dest_name, rb_str_new2(nameBuf));
+    rb_hash_aset(info, sym_dest_activeDurableCount, LONG2FIX(dest_activeDurableCount));
+    rb_hash_aset(info, sym_dest_durableCount, LONG2FIX(dest_durableCount));
+    rb_hash_aset(info, sym_dest_flowControlMaxBytes, LONG2FIX(dest_flowControlMaxBytes));
+    rb_hash_aset(info, sym_dest_maxBytes, LONG2FIX(dest_maxBytes));
+    rb_hash_aset(info, sym_dest_maxMsgs, LONG2FIX(dest_maxMsgs));
+    rb_hash_aset(info, sym_dest_pendingMessageCount, LONG2FIX(dest_pendingMessageCount));
+    rb_hash_aset(info, sym_dest_pendingMessageSize, LONG2FIX(dest_pendingMessageSize));
+    rb_hash_aset(info, sym_dest_pendingPersistentMessageCount, LONG2FIX(dest_pendingPersistentMessageCount));
+    rb_hash_aset(info, sym_dest_subscriberCount, LONG2FIX(dest_subscriberCount));
+
+    VALUE stats;
+    tibems_long dest_byteRate, dest_messageRate, dest_totalBytes, dest_totalMessages;
+
+    if ((TIBEMS_OK == tibemsTopicInfo_GetOutboundStatistics(topicInfo, &statData))
+        && (TIBEMS_OK == tibemsStatData_GetByteRate(statData, &dest_byteRate))
+        && (TIBEMS_OK == tibemsStatData_GetMessageRate(statData, &dest_messageRate))
+        && (TIBEMS_OK == tibemsStatData_GetTotalBytes(statData, &dest_totalBytes))
+        && (TIBEMS_OK == tibemsStatData_GetTotalMessages(statData, &dest_totalMessages))) {
+
+        stats = rb_hash_new();
+        rb_hash_aset(stats, sym_dest_byteRate, LONG2FIX(dest_byteRate));
+        rb_hash_aset(stats, sym_dest_messageRate, LONG2FIX(dest_messageRate));
+        rb_hash_aset(stats, sym_dest_totalBytes, LONG2FIX(dest_totalBytes));
+        rb_hash_aset(stats, sym_dest_totalMessages, LONG2FIX(dest_totalMessages));
+
+        rb_hash_aset(info, sym_outbound, stats);
+    } else {
+      rb_raise_tibems_admin_error(wrapper);
+    }
+
+    if ((TIBEMS_OK == tibemsTopicInfo_GetInboundStatistics(topicInfo, &statData))
+        && (TIBEMS_OK == tibemsStatData_GetByteRate(statData, &dest_byteRate))
+        && (TIBEMS_OK == tibemsStatData_GetMessageRate(statData, &dest_messageRate))
+        && (TIBEMS_OK == tibemsStatData_GetTotalBytes(statData, &dest_totalBytes))
+        && (TIBEMS_OK == tibemsStatData_GetTotalMessages(statData, &dest_totalMessages))) {
+
+        stats = rb_hash_new();
+        rb_hash_aset(stats, sym_dest_byteRate, LONG2FIX(dest_byteRate));
+        rb_hash_aset(stats, sym_dest_messageRate, LONG2FIX(dest_messageRate));
+        rb_hash_aset(stats, sym_dest_totalBytes, LONG2FIX(dest_totalBytes));
+        rb_hash_aset(stats, sym_dest_totalMessages, LONG2FIX(dest_totalMessages));
+
+        rb_hash_aset(info, sym_inbound, stats);
+    } else {
+      rb_raise_tibems_admin_error(wrapper);
+    }
+    return info;
   } else {
     return Qnil;
   }
@@ -492,7 +579,7 @@ static VALUE initialize_ext(VALUE self) {
 
 void init_tibems_admin() {
 #if 0
-  mTibEMS      = rb_define_module("Mysql2"); Teach RDoc about Mysql2 constant.
+  mTibEMS      = rb_define_module("TibEMS"); Teach RDoc about TibEMS constant.
 #endif
 
   cTibEMSAdmin = rb_define_class_under(mTibEMS, "Admin", rb_cObject);
@@ -521,7 +608,16 @@ void init_tibems_admin() {
   sym_dest_pendingMessageSize    = ID2SYM(rb_intern("pendingMessageSize"));
   sym_dest_activeDurableCount    = ID2SYM(rb_intern("activeDurableCount"));
   sym_dest_durableCount          = ID2SYM(rb_intern("durableCount"));
-  sym_dest_pendingPersistentMessageCount = ID2SYM(rb_intern("pendingPersistentMess"));
+  sym_dest_pendingPersistentMessageCount = ID2SYM(rb_intern("pendingPersistentMessageCount"));
+  sym_dest_receiverCount         = ID2SYM(rb_intern("receiverCount"));
+  sym_dest_subscriberCount       = ID2SYM(rb_intern("subscriberCount"));
+  sym_dest_byteRate              = ID2SYM(rb_intern("byteRate"));
+  sym_dest_messageRate           = ID2SYM(rb_intern("messageRate"));
+  sym_dest_totalBytes            = ID2SYM(rb_intern("totalBytes"));
+  sym_dest_totalMessages         = ID2SYM(rb_intern("totalMessages"));
+
+  sym_inbound                    = ID2SYM(rb_intern("inbound"));
+  sym_outbound                   = ID2SYM(rb_intern("outbound"));
 
   intern_brackets = rb_intern("[]");
   intern_merge = rb_intern("merge");
