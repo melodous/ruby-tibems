@@ -9,7 +9,7 @@ require 'tibems/admin'
 
 # = TibEMS
 #
-# A modern, simple binding to TibEMS C libraries
+# A modern, simple binding to TibEMS libraries
 module TibEMS
 end
 

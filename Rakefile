@@ -1,6 +1,11 @@
 # -*- ruby -*-
 
-require "rake/extensiontask"
+if RUBY_PLATFORM =~ /java/
+  require 'rake/javaextensiontask'
+else
+  require 'rake/extensiontask'
+end
+
 require "rubygems"
 require "hoe"
 
@@ -22,19 +27,29 @@ Hoe.spec "tibems" do
   self.readme_file   = 'README.md'
   self.extra_rdoc_files  = FileList['*.rdoc']
   self.extra_dev_deps << ['rake-compiler']
-  self.spec_extras = { :extensions => ["ext/tibems/extconf.rb"] }
   self.urls = [ "https://github.com/jalonsoa/ruby-tibems" ]
   self.licenses = [ "GPL-3.0" ]
 
-
   extra_dev_deps << ["rake-compiler", "~> 0.8"]
 
-  Rake::ExtensionTask.new('tibems', spec) do |ext|
-    ext.lib_dir = File.join('lib', 'tibems')
+  files = Dir.glob("ext/**/*.{c,java,rb}") +
+          Dir.glob("lib/**/*.rb")
 
-    CLEAN.include "lib/tibems/{1.8,1.9}"
-    CLEAN.include "lib/tibems/tibems.rb"
+  if RUBY_PLATFORM =~ /java/
+    ##self.extra_platform = "java"
+    files << "lib/tibems.jar"
+
+    Rake::JavaExtensionTask.new('tibems', spec) do |ext|
+      ext.lib_dir = File.join('lib', 'tibems')
+    end
+  else
+    self.spec_extras = { :extensions => ["ext/tibems/extconf.rb"] }
+
+    Rake::ExtensionTask.new('tibems', spec) do |ext|
+      ext.lib_dir = File.join('lib', 'tibems')
+    end
   end
+
 end
 
 ## Rake::Task[:test].prerequisites << :compile
