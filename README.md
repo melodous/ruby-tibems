@@ -6,7 +6,7 @@ TibEMS
 urls
 -----
 
-- FIX (url)
+- https://github.com/jalonsoa/ruby-tibems
 
 Description
 ------------
@@ -16,7 +16,7 @@ Description
 Features/Problems
 ------------------
 
-- FIX (list of features or problems)
+- Only TibEMSAdmin module implemented: get_info: get information and stats from server, topics and queue
 
 Synopsis
 -------------
