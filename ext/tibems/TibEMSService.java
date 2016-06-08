@@ -25,7 +25,7 @@ public class TibEMSService implements BasicLibraryService {
   // on a specially created class, Faye::WebSocketMask.
   public boolean basicLoad(Ruby runtime) throws IOException {
     this.runtime = runtime;
-    RubyModule tibems = runtime.defineModule("tibems");
+    RubyModule tibems = runtime.defineModule("TibEMS");
 
     // Create the WebSocketMask class. defineClassUnder() takes a name, a
     // reference to the superclass -- runtime.getObject() gets you the Object

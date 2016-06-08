@@ -11,6 +11,7 @@ import org.jruby.RubyHash;
 import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.RubyString;
+import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.ThreadContext;
@@ -33,11 +34,12 @@ import java.util.logging.Logger;
 // The Java class that backs the Ruby class Faye::WebSocketMask. Its methods
 // annotated with @JRubyMethod become exposed as instance methods on the Ruby
 // class through the call to defineAnnotatedMethods() above.
+@JRubyClass(name="TibEMS::Admin")
 public class Admin extends RubyObject {
   public static final int DESTINATION_TYPE_TOPIC = 0;
   public static final int DESTINATION_TYPE_QUEUE = 1;
 
-  private static TibjmsAdmin admin = null;
+  protected static TibjmsAdmin admin = null;
 
   private static IRubyObject Qnil;
 
@@ -47,7 +49,7 @@ public class Admin extends RubyObject {
     Qnil = runtime.getNil();
   }
 
-  @JRubyMethod
+  @JRubyMethod(name = "create", meta = true, required=3)
   public static IRubyObject create(ThreadContext context, IRubyObject self, RubyString url, RubyString user, RubyString pass) {
     try {
       admin = new TibjmsAdmin(url.asJavaString(),user.asJavaString(),pass.asJavaString());
@@ -57,10 +59,11 @@ public class Admin extends RubyObject {
     return self;
   }
 
-  @JRubyMethod
+  @JRubyMethod(name = "close", meta = true, required=0)
   public IRubyObject close(ThreadContext context) {
     try {
       admin.close();
+      admin = null;
     } catch (TibjmsAdminException exp) {
     }
     return Qnil;
@@ -115,7 +118,7 @@ public class Admin extends RubyObject {
     return info;
   }
 
-  @JRubyMethod
+  @JRubyMethod(name = "get_info", meta = true, required=0)
   public IRubyObject get_info(ThreadContext context) {
     Ruby runtime = context.runtime;
     RubyHash info = RubyHash.newHash( runtime );

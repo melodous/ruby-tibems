@@ -4,7 +4,11 @@ require 'bigdecimal'
 
 require 'tibems/version' unless defined? TibEMS::VERSION
 require 'tibems/error'
-require 'tibems/tibems'
+if defined?(RUBY_ENGINE) && RUBY_ENGINE == "jruby"
+  require 'tibems/tibems.jar'
+else
+  require 'tibems/tibems'
+end
 require 'tibems/admin'
 
 # = TibEMS
@@ -15,6 +19,11 @@ end
 
 # For holding utility methods
 module TibEMS
+  if RUBY_PLATFORM =~ /java/
+    require 'jruby'
+    org.jalonsoa.tibems.TibEMSService.new.basicLoad(JRuby.runtime)
+  end
+
   module Util
     #
     # Rekey a string-keyed hash with equivalent symbols.
