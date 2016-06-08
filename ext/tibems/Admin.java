@@ -49,8 +49,8 @@ public class Admin extends RubyObject {
     Qnil = runtime.getNil();
   }
 
-  @JRubyMethod(name = "create", meta = true, required=3)
-  public static IRubyObject create(ThreadContext context, IRubyObject self, RubyString url, RubyString user, RubyString pass) {
+  @JRubyMethod(name = "create")
+  protected static IRubyObject create(ThreadContext context, IRubyObject self, RubyString url, RubyString user, RubyString pass) {
     try {
       admin = new TibjmsAdmin(url.asJavaString(),user.asJavaString(),pass.asJavaString());
     } catch (TibjmsAdminException exp) {
