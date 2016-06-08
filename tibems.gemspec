@@ -14,9 +14,9 @@ Gem::Specification.new do |s|
   if RUBY_PLATFORM =~ /java/
     s.platform = "java"
     files << "lib/tibems.jar"
-  else
-    s.extensions << "ext/tibems/extconf.rb"
   end
+
+  s.extensions << "ext/tibems/extconf.rb"
 
   s.files = files
 
