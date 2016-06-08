@@ -22,6 +22,7 @@ import com.tibco.tibjms.admin.DestinationInfo;
 import com.tibco.tibjms.admin.QueueInfo;
 import com.tibco.tibjms.admin.TopicInfo;
 import com.tibco.tibjms.admin.ServerInfo;
+import com.tibco.tibjms.admin.StatData;
 import com.tibco.tibjms.admin.TibjmsAdmin;
 import com.tibco.tibjms.admin.TibjmsAdminException;
 
@@ -62,6 +63,42 @@ public class Admin extends RubyObject {
     return Qnil;
   }
 
+  private RubyArray destinationsHash( Ruby runtime, DestinationInfo[] destInfos ) {
+    RubyArray info = RubyArray.newArray( runtime, destInfos.length );
+
+    for (DestinationInfo destInfo : destInfos) {
+      RubyHash dest = RubyHash.newHash( runtime );
+      RubyHash inbound = RubyHash.newHash( runtime );
+      RubyHash outbound = RubyHash.newHash( runtime );
+
+      dest.put("name",destInfo.getName());
+      dest.put("consumerCount", destInfo.getConsumerCount());
+      dest.put("flowControlMaxBytes", destInfo.getFlowControlMaxBytes());
+      dest.put("pendingMessageCount", destInfo.getPendingMessageCount());
+      dest.put("pendingMessageSize", destInfo.getPendingMessageSize());
+
+      StatData inboundStats = destInfo.getInboundStatistics();
+      inbound.put("totalMessages", inboundStats.getTotalMessages());
+      inbound.put("messageRate", inboundStats.getMessageRate());
+      inbound.put("totalBytes", inboundStats.getTotalBytes());
+      inbound.put("byteRate", inboundStats.getByteRate());
+
+      dest.put("inbound", inbound);
+
+      StatData outboundStats = destInfo.getInboundStatistics();
+      outbound.put("totalMessages", outboundStats.getTotalMessages());
+      outbound.put("messageRate", outboundStats.getMessageRate());
+      outbound.put("totalBytes", outboundStats.getTotalBytes());
+      outbound.put("byteRate", outboundStats.getByteRate());
+
+      dest.put("outbound", outbound);
+
+      info.add(dest);
+    }
+
+    return info;
+  }
+
   @JRubyMethod
   public IRubyObject get_info(ThreadContext context) {
     Ruby runtime = context.runtime;
@@ -100,8 +137,20 @@ public class Admin extends RubyObject {
       // TODO: pass pattern
       QueueInfo[] queueInfos = admin.getQueuesStatistics();
 
+      if (queueInfos.length > 0) {
+        RubyArray queues = destinationsHash( runtime, queueInfos );
+
+        info.put("queues", queues);
+      }
+
       // TODO: pass pattern
       TopicInfo[] topicInfos = admin.getTopicsStatistics();
+
+      if (topicInfos.length > 0) {
+        RubyArray topics = destinationsHash( runtime, topicInfos );
+
+        info.put("topics", topics);
+      }
 
     } catch (TibjmsAdminException exp) {
     }
