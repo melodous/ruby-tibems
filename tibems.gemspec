@@ -1,10 +1,12 @@
 # tibems.gemspec
 
 Gem::Specification.new do |s|
-  s.name    = "tibems-websocket"
-  s.version = "0.0.1"
-  s.summary = "TibEMS bindings for Ruby"
-  s.author  = ["Justo Alonso","justo.alonso@gmail.com"]
+  s.name     = "tibems-websocket"
+  s.version  = "0.0.1"
+  s.summary  = "TibEMS bindings for Ruby"
+  s.authors  = ["Justo Alonso"]
+  s.email    = ["justo.alonso@gmail.com"]
+  s.homepage = "https://github.com/jalonsoa/ruby-tibems"
 
   files = Dir.glob("ext/**/*.{c,java,rb}") +
           Dir.glob("lib/**/*.rb")
