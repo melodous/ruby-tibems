@@ -34,6 +34,9 @@ import java.util.logging.Logger;
 // annotated with @JRubyMethod become exposed as instance methods on the Ruby
 // class through the call to defineAnnotatedMethods() above.
 public class Admin extends RubyObject {
+  public static final int DESTINATION_TYPE_TOPIC = 0;
+  public static final int DESTINATION_TYPE_QUEUE = 1;
+
   private static TibjmsAdmin admin = null;
 
   private static IRubyObject Qnil;
@@ -63,7 +66,7 @@ public class Admin extends RubyObject {
     return Qnil;
   }
 
-  private RubyArray destinationsHash( Ruby runtime, DestinationInfo[] destInfos ) {
+  private RubyArray destinationsHash( Ruby runtime, DestinationInfo[] destInfos, int type ) {
     RubyArray info = RubyArray.newArray( runtime, destInfos.length );
 
     for (DestinationInfo destInfo : destInfos) {
@@ -76,6 +79,19 @@ public class Admin extends RubyObject {
       dest.put("flowControlMaxBytes", destInfo.getFlowControlMaxBytes());
       dest.put("pendingMessageCount", destInfo.getPendingMessageCount());
       dest.put("pendingMessageSize", destInfo.getPendingMessageSize());
+
+      if (type == DESTINATION_TYPE_TOPIC) {
+        TopicInfo topicInfo = (TopicInfo)destInfo;
+        dest.put("subscriberCount", topicInfo.getSubscriberCount());
+        dest.put("durableCount", topicInfo.getDurableCount());
+        dest.put("activeDurableCount", topicInfo.getActiveDurableCount());
+      } else {
+        QueueInfo queueInfo = (QueueInfo)destInfo;
+        dest.put("receiverCount", queueInfo.getReceiverCount());
+        dest.put("deliveredMessageCount", queueInfo.getDeliveredMessageCount());
+        dest.put("inTransitMessageCount", queueInfo.getInTransitMessageCount());
+        dest.put("maxRedelivery", queueInfo.getMaxRedelivery());
+      }
 
       StatData inboundStats = destInfo.getInboundStatistics();
       inbound.put("totalMessages", inboundStats.getTotalMessages());
@@ -138,7 +154,7 @@ public class Admin extends RubyObject {
       QueueInfo[] queueInfos = admin.getQueuesStatistics();
 
       if (queueInfos.length > 0) {
-        RubyArray queues = destinationsHash( runtime, queueInfos );
+        RubyArray queues = destinationsHash( runtime, queueInfos, DESTINATION_TYPE_QUEUE );
 
         info.put("queues", queues);
       }
@@ -147,7 +163,7 @@ public class Admin extends RubyObject {
       TopicInfo[] topicInfos = admin.getTopicsStatistics();
 
       if (topicInfos.length > 0) {
-        RubyArray topics = destinationsHash( runtime, topicInfos );
+        RubyArray topics = destinationsHash( runtime, topicInfos, DESTINATION_TYPE_TOPIC );
 
         info.put("topics", topics);
       }
