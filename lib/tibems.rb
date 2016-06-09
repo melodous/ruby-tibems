@@ -6,6 +6,10 @@ require 'tibems/version' unless defined? TibEMS::VERSION
 require 'tibems/error'
 if defined?(RUBY_ENGINE) && RUBY_ENGINE == "jruby"
   require 'jruby'
+  begin
+    require 'tibems_jars'
+  rescue LoadError
+  end
   require 'tibems/tibems.jar'
   org.jalonsoa.tibems.TibEMSService.new.basicLoad(JRuby.runtime)
 else
