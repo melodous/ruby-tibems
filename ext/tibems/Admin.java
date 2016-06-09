@@ -59,7 +59,7 @@ public class Admin extends RubyObject {
     return self;
   }
 
-  @JRubyMethod(name = "close", meta = true, required=0)
+  @JRubyMethod(name = "close")
   public IRubyObject close(ThreadContext context) {
     try {
       admin.close();
@@ -118,7 +118,7 @@ public class Admin extends RubyObject {
     return info;
   }
 
-  @JRubyMethod(name = "get_info", meta = true, required=0)
+  @JRubyMethod(name = "get_info")
   public IRubyObject get_info(ThreadContext context) {
     Ruby runtime = context.runtime;
     RubyHash info = RubyHash.newHash( runtime );
