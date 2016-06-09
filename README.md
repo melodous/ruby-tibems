@@ -42,7 +42,7 @@ After checking out the source, run:
 
 Then, you can check with irb:
 
->  $ cd lib && irb -I . -r ./tibems
+>  $ irb -I./lib -I./vendor/ -r tibems
 >  irb(main):006:0* admin = TibEMS::Admin.new(:url => "tcp://localhost:7222", :user => "admin", :pass => "password")
 >  TibEMS::Error: 2016-05-25 01:42:49: Server not connected
 >  	from /home/justo/dia/esb/ems/tibco-ems-dev/ruby/tibems/lib/tibems/admin.rb:20:in `create'

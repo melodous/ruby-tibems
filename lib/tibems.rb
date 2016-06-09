@@ -4,12 +4,19 @@ require 'bigdecimal'
 
 require 'tibems/version' unless defined? TibEMS::VERSION
 require 'tibems/error'
-require 'tibems/tibems'
+if defined?(RUBY_ENGINE) && RUBY_ENGINE == "jruby"
+  require 'jruby'
+  require 'tibems/tibems.jar'
+  org.jalonsoa.tibems.TibEMSService.new.basicLoad(JRuby.runtime)
+else
+  require 'tibems/tibems'
+end
 require 'tibems/admin'
+
 
 # = TibEMS
 #
-# A modern, simple binding to TibEMS C libraries
+# A modern, simple binding to TibEMS libraries
 module TibEMS
 end
 

@@ -1,0 +1,29 @@
+# tibems.gemspec
+
+Gem::Specification.new do |s|
+  s.name        = "tibems"
+  s.version     = "0.0.2"
+  s.summary     = "TibEMS bindings for Ruby"
+  s.description = "TibEMS bindings for Ruby"
+  s.authors     = ["Justo Alonso"]
+  s.email       = ["justo.alonso@gmail.com"]
+  s.homepage    = "https://github.com/jalonsoa/ruby-tibems"
+  s.licenses =    [ "GPL-3.0" ]
+
+  files = Dir.glob("lib/**/*.rb") +
+          Dir.glob("lib/tibems.rb")
+
+  if RUBY_PLATFORM =~ /java/
+    s.platform = "java"
+    files += Dir.glob("ext/**/*.{java,rb}")
+    files << "lib/tibems/tibems.jar"
+  else
+    files += Dir.glob("ext/**/*.{c,h,rb}")
+    s.extensions << "ext/tibems/extconf.rb"
+  end
+
+  s.files = files
+
+  s.add_development_dependency "rake-compiler"
+end
+

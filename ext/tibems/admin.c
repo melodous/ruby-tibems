@@ -256,7 +256,8 @@ static VALUE rb_tibems_admin_get_queue_stats(VALUE self, tibemsQueueInfo  queueI
               dest_pendingPersistentMessageCount;
   tibems_int dest_receiverCount;
   tibemsStatData statData;
-  VALUE info;
+  VALUE info, stats;
+  tibems_long dest_byteRate, dest_messageRate, dest_totalBytes, dest_totalMessages;
   char nameBuf[1024];
 
   GET_ADMIN(self);
@@ -286,9 +287,6 @@ static VALUE rb_tibems_admin_get_queue_stats(VALUE self, tibemsQueueInfo  queueI
     rb_hash_aset(info, sym_dest_pendingMessageSize, LONG2FIX(dest_pendingMessageSize));
     rb_hash_aset(info, sym_dest_pendingPersistentMessageCount, LONG2FIX(dest_pendingPersistentMessageCount));
     rb_hash_aset(info, sym_dest_receiverCount, LONG2FIX(dest_receiverCount));
-
-    VALUE stats;
-    tibems_long dest_byteRate, dest_messageRate, dest_totalBytes, dest_totalMessages;
 
     if ((TIBEMS_OK == tibemsQueueInfo_GetOutboundStatistics(queueInfo, &statData))
         && (TIBEMS_OK == tibemsStatData_GetByteRate(statData, &dest_byteRate))
@@ -337,7 +335,8 @@ static VALUE rb_tibems_admin_get_topic_stats(VALUE self, tibemsTopicInfo topicIn
               dest_maxMsgs, dest_pendingMessageCount, dest_pendingMessageSize,
               dest_pendingPersistentMessageCount;
   tibemsStatData statData;
-  VALUE info;
+  VALUE info, stats;
+  tibems_long dest_byteRate, dest_messageRate, dest_totalBytes, dest_totalMessages;
   char nameBuf[1024];
 
   GET_ADMIN(self);
@@ -369,9 +368,6 @@ static VALUE rb_tibems_admin_get_topic_stats(VALUE self, tibemsTopicInfo topicIn
     rb_hash_aset(info, sym_dest_pendingMessageSize, LONG2FIX(dest_pendingMessageSize));
     rb_hash_aset(info, sym_dest_pendingPersistentMessageCount, LONG2FIX(dest_pendingPersistentMessageCount));
     rb_hash_aset(info, sym_dest_subscriberCount, LONG2FIX(dest_subscriberCount));
-
-    VALUE stats;
-    tibems_long dest_byteRate, dest_messageRate, dest_totalBytes, dest_totalMessages;
 
     if ((TIBEMS_OK == tibemsTopicInfo_GetOutboundStatistics(topicInfo, &statData))
         && (TIBEMS_OK == tibemsStatData_GetByteRate(statData, &dest_byteRate))
