@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.authors     = ["Justo Alonso"]
   s.email       = ["justo.alonso@gmail.com"]
   s.homepage    = "https://github.com/jalonsoa/ruby-tibems"
-  s.licenses =    [ "GPL-3.0" ]
+  s.licenses =    [ "Apache-2.0" ]
 
   files = Dir.glob("lib/**/*.rb") +
           Dir.glob("lib/tibems.rb")
