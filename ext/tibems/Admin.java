@@ -50,21 +50,23 @@ public class Admin extends RubyObject {
   }
 
   @JRubyMethod(name = "create")
-  protected static IRubyObject create(ThreadContext context, IRubyObject self, RubyString url, RubyString user, RubyString pass) {
+  protected static IRubyObject create(ThreadContext context, IRubyObject self, RubyString url, RubyString user, RubyString pass) throws TibjmsAdminException {
     try {
       admin = new TibjmsAdmin(url.asJavaString(),user.asJavaString(),pass.asJavaString());
     } catch (TibjmsAdminException exp) {
+      throw exp;
     }
 
     return self;
   }
 
   @JRubyMethod(name = "close")
-  public IRubyObject close(ThreadContext context) {
+  public IRubyObject close(ThreadContext context) throws TibjmsAdminException {
     try {
       admin.close();
       admin = null;
     } catch (TibjmsAdminException exp) {
+      throw exp;
     }
     return Qnil;
   }
@@ -119,7 +121,7 @@ public class Admin extends RubyObject {
   }
 
   @JRubyMethod(name = "get_info")
-  public IRubyObject get_info(ThreadContext context) {
+  public IRubyObject get_info(ThreadContext context) throws TibjmsAdminException {
     Ruby runtime = context.runtime;
     RubyHash info = RubyHash.newHash( runtime );
 
@@ -133,7 +135,6 @@ public class Admin extends RubyObject {
       info.put("msgMem", serverInfo.getMsgMem());
       info.put("msgMemPooled", serverInfo.getMsgMemPooled());
       info.put("maxMsgMemory", serverInfo.getMaxMsgMemory());
-      info.put("msgMem", serverInfo.getMsgMem());
       info.put("connectionCount", serverInfo.getConnectionCount());
       info.put("maxConnections", serverInfo.getMaxConnections());
       info.put("sessionCount", serverInfo.getSessionCount());
@@ -172,6 +173,7 @@ public class Admin extends RubyObject {
       }
 
     } catch (TibjmsAdminException exp) {
+      throw exp;
     }
 
     return info;
