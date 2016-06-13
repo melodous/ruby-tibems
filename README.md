@@ -26,37 +26,45 @@ Synopsis
 Requirements
 ---------------------
 
-- You need the TIBCO EMS C development library (include a lib files)
+* If you install the java version, you need the tibco jars (see lib directory on your tibco ems installation)
+* If you install the C version, you need the TIBCO EMS C development library
 
 Install
 ---------
 
-* FIX (sudo gem install, anything else)
+* If you install the java version, first you must add the tibco jars files to your local maven repository:
+
+  https://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html
+
+> mvn install:install-file -Dfile=[path-to-tibjms.jar-file] -DgroupId=com.tibco \
+> &nbsp;&nbsp;&nbsp;&nbsp;-DartifactId=tibjms -Dversion=[tibco_version] -Dpackaging=jar
+> mvn install:install-file -Dfile=[path-to-tibjmsadmin.jar-file] -DgroupId=com.tibco \
+> &nbsp;&nbsp;&nbsp;&nbsp;-DartifactId=tibjms-admin -Dversion=[tibco-version] -Dpackaging=jar
+
+* If you install the C version, then you must add the parameter to define the tibco ems directory
+
+>  $ gem install &lt;gem-file&gt; -- --with-tibems-dir=&lt;tibco-ems-dev-dir&gt;
 
 Developers
 -----------------
 
 After checking out the source, run:
 
->  $ rake compile -- --with-tibems-dir=<tibco_esm_dir>
+>  $ rake compile -- --with-tibems-dir=&lt;tibco-ems-dev-dir&gt;
 
 Then, you can check with irb:
 
 >  $ irb -I./lib -I./vendor/ -r tibems
->  irb(main):006:0* admin = TibEMS::Admin.new(:url => "tcp://localhost:7222", :user => "admin", :pass => "password")
->  TibEMS::Error: 2016-05-25 01:42:49: Server not connected
->  	from /home/justo/dia/esb/ems/tibco-ems-dev/ruby/tibems/lib/tibems/admin.rb:20:in `create'
->  	from /home/justo/dia/esb/ems/tibco-ems-dev/ruby/tibems/lib/tibems/admin.rb:20:in `initialize'
->  	from (irb):6:in `new'
->  	from (irb):6
->  	from /usr/bin/irb:12:in `<main>'
-
-
-This task will install any missing dependencies, run the tests/specs,
-and generate the RDoc.
+> 2.3.0 :001 > admin = TibEMS::Admin.new(:url => "tcp://localhost:7222", :user => "admin", :pass => "password")
+> TibEMS::Error: 2016-06-09 20:22:42: Server not connected
+> &nbsp;&nbsp;&nbsp;&nbsp;from /home/justo/ruby-tibems/lib/tibems/admin.rb:36:in `create`
+> &nbsp;&nbsp;&nbsp;&nbsp;from /home/justo/ruby-tibems/lib/tibems/admin.rb:36:in `initialize`
+> &nbsp;&nbsp;&nbsp;&nbsp;from (irb):1:in `new`
+> &nbsp;&nbsp;&nbsp;&nbsp;from (irb):1
+> &nbsp;&nbsp;&nbsp;&nbsp;from /home/justo/.rvm/rubies/ruby-2.3.0/bin/irb:11:in '&lt;main%gt;'
+2.3.0 :002 > quit
 
 License
 ------------
 
 (GNU GENERAL PUBLIC LICENSE) Show LICENSE file
-
