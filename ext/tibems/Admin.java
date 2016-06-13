@@ -80,22 +80,31 @@ public class Admin extends RubyObject {
       RubyHash outbound = RubyHash.newHash( runtime );
 
       dest.put("name",destInfo.getName());
+
       dest.put("consumerCount", destInfo.getConsumerCount());
+
       dest.put("flowControlMaxBytes", destInfo.getFlowControlMaxBytes());
+
+      dest.put("maxBytes", destInfo.getMaxBytes());
+      dest.put("maxMsgs", destInfo.getMaxMsgs());
+
       dest.put("pendingMessageCount", destInfo.getPendingMessageCount());
       dest.put("pendingMessageSize", destInfo.getPendingMessageSize());
 
+      dest.put("pendingPersistentMessageCount", destInfo.getPendingPersistentMessageCount());
+      dest.put("pendingPersistentMessageSize", destInfo.getPendingPersistentMessageSize());
+
       if (type == DESTINATION_TYPE_TOPIC) {
         TopicInfo topicInfo = (TopicInfo)destInfo;
-        dest.put("subscriberCount", topicInfo.getSubscriberCount());
-        dest.put("durableCount", topicInfo.getDurableCount());
         dest.put("activeDurableCount", topicInfo.getActiveDurableCount());
+        dest.put("durableCount", topicInfo.getDurableCount());
+        dest.put("subscriberCount", topicInfo.getSubscriberCount());
       } else {
         QueueInfo queueInfo = (QueueInfo)destInfo;
-        dest.put("receiverCount", queueInfo.getReceiverCount());
         dest.put("deliveredMessageCount", queueInfo.getDeliveredMessageCount());
         dest.put("inTransitMessageCount", queueInfo.getInTransitMessageCount());
         dest.put("maxRedelivery", queueInfo.getMaxRedelivery());
+        dest.put("receiverCount", queueInfo.getReceiverCount());
       }
 
       StatData inboundStats = destInfo.getInboundStatistics();
@@ -128,31 +137,32 @@ public class Admin extends RubyObject {
     try {
       ServerInfo serverInfo = admin.getInfo();
 
-      info.put("diskReadRate", serverInfo.getDiskReadRate());
-      info.put("diskWriteRate", serverInfo.getDiskWriteRate());
-      info.put("syncDBSize", serverInfo.getSyncDBSize());
       info.put("asyncDBSize", serverInfo.getAsyncDBSize());
-      info.put("msgMem", serverInfo.getMsgMem());
-      info.put("msgMemPooled", serverInfo.getMsgMemPooled());
-      info.put("maxMsgMemory", serverInfo.getMaxMsgMemory());
       info.put("connectionCount", serverInfo.getConnectionCount());
-      info.put("maxConnections", serverInfo.getMaxConnections());
-      info.put("sessionCount", serverInfo.getSessionCount());
-      info.put("producerCount", serverInfo.getProducerCount());
       info.put("consumerCount", serverInfo.getConsumerCount());
+      info.put("diskReadOperationsRate", serverInfo.getDiskReadOperationsRate());
+      info.put("diskReadRate", serverInfo.getDiskReadRate());
+      info.put("diskWriteOperationsRate", serverInfo.getDiskWriteOperationsRate());
+      info.put("diskWriteRate", serverInfo.getDiskWriteRate());
       info.put("durableCount", serverInfo.getDurableCount());
-      info.put("topicCount", serverInfo.getTopicCount());
-      info.put("queueCount", serverInfo.getQueueCount());
-      info.put("pendingMessageCount", serverInfo.getPendingMessageCount());
-      info.put("pendingMessageSize", serverInfo.getPendingMessageSize());
+      info.put("inboundBytesRate", serverInfo.getInboundBytesRate());
       info.put("inboundMessageCount", serverInfo.getInboundMessageCount());
       info.put("inboundMessageRate", serverInfo.getInboundMessageRate());
-      info.put("inboundBytesRate", serverInfo.getInboundBytesRate());
+      info.put("maxConnections", serverInfo.getMaxConnections());
+      info.put("maxMsgMemory", serverInfo.getMaxMsgMemory());
+      info.put("msgMem", serverInfo.getMsgMem());
+      info.put("msgMemPooled", serverInfo.getMsgMemPooled());
+      info.put("outboundBytesRate", serverInfo.getOutboundBytesRate());
       info.put("outboundMessageCount", serverInfo.getOutboundMessageCount());
       info.put("outboundMessageRate", serverInfo.getOutboundMessageRate());
-      info.put("outboundBytesRate", serverInfo.getOutboundBytesRate());
-      info.put("logFileMaxSize", serverInfo.getLogFileMaxSize());
-      info.put("logFileSize", serverInfo.getLogFileSize());
+      info.put("pendingMessageCount", serverInfo.getPendingMessageCount());
+      info.put("pendingMessageSize", serverInfo.getPendingMessageSize());
+      info.put("producerCount", serverInfo.getProducerCount());
+      info.put("queueCount", serverInfo.getQueueCount());
+      info.put("reserveMemory", serverInfo.getReserveMemory());
+      info.put("sessionCount", serverInfo.getSessionCount());
+      info.put("syncDBSize", serverInfo.getSyncDBSize());
+      info.put("topicCount", serverInfo.getTopicCount());
 
       // TODO: pass pattern
       QueueInfo[] queueInfos = admin.getQueuesStatistics();
