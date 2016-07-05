@@ -115,7 +115,7 @@ public class Admin extends RubyObject {
 
       dest.put("inbound", inbound);
 
-      StatData outboundStats = destInfo.getInboundStatistics();
+      StatData outboundStats = destInfo.getOutboundStatistics();
       outbound.put("totalMessages", outboundStats.getTotalMessages());
       outbound.put("messageRate", outboundStats.getMessageRate());
       outbound.put("totalBytes", outboundStats.getTotalBytes());
