@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = "tibems"
-  s.version     = "0.0.5"
+  s.version     = "0.0.6"
   s.summary     = "TibEMS bindings for Ruby"
   s.description = "TibEMS bindings for Ruby. Ruby interface for the tibjmsadmin.jar library"
   s.authors     = ["Justo Alonso"]
