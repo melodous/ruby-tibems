@@ -36,10 +36,8 @@ Install
 
   https://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html
 
-> mvn install:install-file -Dfile=[path-to-tibjms.jar-file] -DgroupId=com.tibco \
-> &nbsp;&nbsp;&nbsp;&nbsp;-DartifactId=tibjms -Dversion=[tibco_version] -Dpackaging=jar
-> mvn install:install-file -Dfile=[path-to-tibjmsadmin.jar-file] -DgroupId=com.tibco \
-> &nbsp;&nbsp;&nbsp;&nbsp;-DartifactId=tibjms-admin -Dversion=[tibco-version] -Dpackaging=jar
+> $ mvn install:install-file -Dfile=[path-to-tibjms.jar-file] -DgroupId=com.tibco -DartifactId=tibjms -Dversion=[tibco_version] -Dpackaging=jar
+> $ mvn install:install-file -Dfile=[path-to-tibjmsadmin.jar-file] -DgroupId=com.tibco -DartifactId=tibjms-admin -Dversion=[tibco-version] -Dpackaging=jar
 
 * If you install the C version, then you must add the parameter to define the tibco ems directory
 
@@ -57,11 +55,11 @@ Then, you can check with irb:
 >  $ irb -I./lib -I./vendor/ -r tibems
 > 2.3.0 :001 > admin = TibEMS::Admin.new(:url => "tcp://localhost:7222", :user => "admin", :pass => "password")
 > TibEMS::Error: 2016-06-09 20:22:42: Server not connected
-> &nbsp;&nbsp;&nbsp;&nbsp;from /home/justo/ruby-tibems/lib/tibems/admin.rb:36:in `create`
-> &nbsp;&nbsp;&nbsp;&nbsp;from /home/justo/ruby-tibems/lib/tibems/admin.rb:36:in `initialize`
+> &nbsp;&nbsp;&nbsp;&nbsp;from ./lib/tibems/admin.rb:36:in `create`
+> &nbsp;&nbsp;&nbsp;&nbsp;from ./lib/tibems/admin.rb:36:in `initialize`
 > &nbsp;&nbsp;&nbsp;&nbsp;from (irb):1:in `new`
 > &nbsp;&nbsp;&nbsp;&nbsp;from (irb):1
-> &nbsp;&nbsp;&nbsp;&nbsp;from /home/justo/.rvm/rubies/ruby-2.3.0/bin/irb:11:in '&lt;main%gt;'
+> &nbsp;&nbsp;&nbsp;&nbsp;from ~/.rvm/rubies/ruby-2.3.0/bin/irb:11:in '&lt;main%gt;'
 2.3.0 :002 > quit
 
 License
