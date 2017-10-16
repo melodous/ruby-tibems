@@ -39,9 +39,9 @@ public class Admin extends RubyObject {
   public static final int DESTINATION_TYPE_TOPIC = 0;
   public static final int DESTINATION_TYPE_QUEUE = 1;
 
-  protected static TibjmsAdmin admin = null;
-
   private static IRubyObject Qnil;
+
+  private TibjmsAdmin admin = null;
 
   public Admin(final Ruby runtime, RubyClass rubyClass) {
     super(runtime, rubyClass);
@@ -50,21 +50,21 @@ public class Admin extends RubyObject {
   }
 
   @JRubyMethod(name = "create")
-  protected static IRubyObject create(ThreadContext context, IRubyObject self, RubyString url, RubyString user, RubyString pass) throws TibjmsAdminException {
+  protected IRubyObject create(ThreadContext context, RubyString url, RubyString user, RubyString pass) throws TibjmsAdminException {
     try {
-      admin = new TibjmsAdmin(url.asJavaString(),user.asJavaString(),pass.asJavaString());
+      this.admin = new TibjmsAdmin(url.asJavaString(),user.asJavaString(),pass.asJavaString());
     } catch (TibjmsAdminException exp) {
       throw exp;
     }
 
-    return self;
+    return this;
   }
 
   @JRubyMethod(name = "close")
   public IRubyObject close(ThreadContext context) throws TibjmsAdminException {
     try {
-      admin.close();
-      admin = null;
+      this.admin.close();
+      this.admin = null;
     } catch (TibjmsAdminException exp) {
       throw exp;
     }
@@ -135,7 +135,7 @@ public class Admin extends RubyObject {
     RubyHash info = RubyHash.newHash( runtime );
 
     try {
-      ServerInfo serverInfo = admin.getInfo();
+      ServerInfo serverInfo = this.admin.getInfo();
 
       info.put("asyncDBSize", serverInfo.getAsyncDBSize());
       info.put("connectionCount", serverInfo.getConnectionCount());
@@ -165,7 +165,7 @@ public class Admin extends RubyObject {
       info.put("topicCount", serverInfo.getTopicCount());
 
       // TODO: pass pattern
-      QueueInfo[] queueInfos = admin.getQueuesStatistics();
+      QueueInfo[] queueInfos = this.admin.getQueuesStatistics();
 
       if (queueInfos.length > 0) {
         RubyArray queues = destinationsHash( runtime, queueInfos, DESTINATION_TYPE_QUEUE );
@@ -174,7 +174,7 @@ public class Admin extends RubyObject {
       }
 
       // TODO: pass pattern
-      TopicInfo[] topicInfos = admin.getTopicsStatistics();
+      TopicInfo[] topicInfos = this.admin.getTopicsStatistics();
 
       if (topicInfos.length > 0) {
         RubyArray topics = destinationsHash( runtime, topicInfos, DESTINATION_TYPE_TOPIC );
