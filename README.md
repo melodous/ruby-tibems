@@ -41,26 +41,42 @@ Install
 
 * If you install the C version, then you must add the parameter to define the tibco ems directory
 
->  $ gem install &lt;gem-file&gt; -- --with-tibems-dir=&lt;tibco-ems-dev-dir&gt;
+> $ gem install &lt;gem-file&gt; -- --with-tibems-dir=&lt;tibco-ems-dev-dir&gt;
 
 Developers
 -----------------
 
 After checking out the source, run:
 
+* If you install the C version, then you must add the parameter to define the tibco ems directory
+
 >  $ rake compile -- --with-tibems-dir=&lt;tibco-ems-dev-dir&gt;
 
-Then, you can check with irb:
+* If you install de java version, don't forget add the tibco jars.
+
+> $ jruby -S rake package --
+
+> $ jruby -S gem install -l pkg/tibems-0.0.7-java.gem
+
+Then, you can check with irb or jirb:
 
 >  $ irb -I./lib -I./vendor/ -r tibems
+
 > 2.3.0 :001 > admin = TibEMS::Admin.new(:url => "tcp://localhost:7222", :user => "admin", :pass => "password")
+
 > TibEMS::Error: 2016-06-09 20:22:42: Server not connected
+
 > &nbsp;&nbsp;&nbsp;&nbsp;from ./lib/tibems/admin.rb:36:in `create`
+
 > &nbsp;&nbsp;&nbsp;&nbsp;from ./lib/tibems/admin.rb:36:in `initialize`
+
 > &nbsp;&nbsp;&nbsp;&nbsp;from (irb):1:in `new`
+
 > &nbsp;&nbsp;&nbsp;&nbsp;from (irb):1
+
 > &nbsp;&nbsp;&nbsp;&nbsp;from ~/.rvm/rubies/ruby-2.3.0/bin/irb:11:in '&lt;main%gt;'
-2.3.0 :002 > quit
+
+> 2.3.0 :002 > quit
 
 License
 ------------
