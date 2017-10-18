@@ -23,6 +23,8 @@ import com.tibco.tibjms.admin.DestinationInfo;
 import com.tibco.tibjms.admin.QueueInfo;
 import com.tibco.tibjms.admin.TopicInfo;
 import com.tibco.tibjms.admin.ServerInfo;
+import com.tibco.tibjms.admin.StoreInfo;
+import com.tibco.tibjms.admin.FileStoreInfo;
 import com.tibco.tibjms.admin.StatData;
 import com.tibco.tibjms.admin.TibjmsAdmin;
 import com.tibco.tibjms.admin.TibjmsAdminException;
@@ -129,6 +131,43 @@ public class Admin extends RubyObject {
     return info;
   }
 
+  @JRubyMethod(name = "get_storeinfo")
+  public IRubyObject get_storeinfo(ThreadContext context) throws TibjmsAdminException {
+    Ruby runtime = context.runtime;
+    RubyArray info;
+
+    String[] arrayStores;
+    try {
+      arrayStores = this.admin.getStores();
+      info = RubyArray.newArray( runtime, arrayStores.length );
+      for (int i = 0; i < arrayStores.length; ++i) {
+        StoreInfo storeInfo = admin.getStoreInfo(arrayStores[i]);
+        RubyHash dest = RubyHash.newHash( runtime );
+        dest.put("name", arrayStores[i]);
+        dest.put("msgBytes", storeInfo.getMsgBytes());
+        dest.put("getMsgCount", storeInfo.getMsgCount());
+        FileStoreInfo fileStoreInfo = null;
+        if (storeInfo instanceof FileStoreInfo) {
+          fileStoreInfo = (FileStoreInfo) storeInfo;
+          dest.put("destinationDefrag", fileStoreInfo.getDestinationDefrag());
+          dest.put("fileMinimum", fileStoreInfo.getFileMinimum());
+          dest.put("fileName", fileStoreInfo.getFileName());
+          dest.put("fragmentation", fileStoreInfo.getFragmentation());
+          dest.put("inUseSpace", fileStoreInfo.getInUseSpace());
+          dest.put("notInUseSpace", fileStoreInfo.getNotInUseSpace());
+          dest.put("size", fileStoreInfo.getSize());
+          dest.put("writeRate", fileStoreInfo.getWriteRate());
+        }
+        info.add(dest);
+      }
+    } catch (TibjmsAdminException exp) {
+      throw exp;
+    }
+
+    return info;
+  }
+
+
   @JRubyMethod(name = "get_info")
   public IRubyObject get_info(ThreadContext context) throws TibjmsAdminException {
     Ruby runtime = context.runtime;
@@ -181,6 +220,8 @@ public class Admin extends RubyObject {
 
         info.put("topics", topics);
       }
+
+      info.put("stores", get_storeinfo( context ));
 
     } catch (TibjmsAdminException exp) {
       throw exp;
