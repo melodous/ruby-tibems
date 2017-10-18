@@ -28,6 +28,9 @@ build/
 /lib/tibems/*.jar
 /lib/*.so
 /lib/*.jar
+lib/com/*
+lib/javax/*
+lib/tibems_jars.rb
 
 /vendor/*
 
