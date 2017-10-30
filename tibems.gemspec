@@ -17,6 +17,9 @@ Gem::Specification.new do |s|
     s.platform = "java"
     files += Dir.glob("ext/**/*.{java,rb}")
     files << "lib/tibems/tibems.jar"
+    files << "lib/javax/jms/javax.jms-api/2.0/javax.jms-api-2.0.jar"
+    files << "lib/com/tibco/tibjms/7.0/tibjms-7.0.jar"
+    files << "lib/com/tibco/tibjms-admin/7.0/tibjms-admin-7.0.jar"
 
     s.add_runtime_dependency 'jar-dependencies', "~>0.2"
 
