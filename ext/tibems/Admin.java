@@ -175,52 +175,59 @@ public class Admin extends RubyObject {
     try {
       ServerInfo serverInfo = this.admin.getInfo();
 
-      info.put("asyncDBSize", serverInfo.getAsyncDBSize());
-      info.put("connectionCount", serverInfo.getConnectionCount());
-      info.put("consumerCount", serverInfo.getConsumerCount());
-      info.put("diskReadOperationsRate", serverInfo.getDiskReadOperationsRate());
-      info.put("diskReadRate", serverInfo.getDiskReadRate());
-      info.put("diskWriteOperationsRate", serverInfo.getDiskWriteOperationsRate());
-      info.put("diskWriteRate", serverInfo.getDiskWriteRate());
-      info.put("durableCount", serverInfo.getDurableCount());
-      info.put("inboundBytesRate", serverInfo.getInboundBytesRate());
-      info.put("inboundMessageCount", serverInfo.getInboundMessageCount());
-      info.put("inboundMessageRate", serverInfo.getInboundMessageRate());
-      info.put("maxConnections", serverInfo.getMaxConnections());
-      info.put("maxMsgMemory", serverInfo.getMaxMsgMemory());
-      info.put("msgMem", serverInfo.getMsgMem());
-      info.put("msgMemPooled", serverInfo.getMsgMemPooled());
-      info.put("outboundBytesRate", serverInfo.getOutboundBytesRate());
-      info.put("outboundMessageCount", serverInfo.getOutboundMessageCount());
-      info.put("outboundMessageRate", serverInfo.getOutboundMessageRate());
-      info.put("pendingMessageCount", serverInfo.getPendingMessageCount());
-      info.put("pendingMessageSize", serverInfo.getPendingMessageSize());
-      info.put("producerCount", serverInfo.getProducerCount());
-      info.put("queueCount", serverInfo.getQueueCount());
-      info.put("reserveMemory", serverInfo.getReserveMemory());
-      info.put("sessionCount", serverInfo.getSessionCount());
-      info.put("syncDBSize", serverInfo.getSyncDBSize());
-      info.put("topicCount", serverInfo.getTopicCount());
+      info.put("serverState", serverInfo.getState());
+      if (serverInfo.getState() != 4) {
+        return info;
 
-      // TODO: pass pattern
-      QueueInfo[] queueInfos = this.admin.getQueuesStatistics();
+      } else {
 
-      if (queueInfos.length > 0) {
-        RubyArray queues = destinationsHash( runtime, queueInfos, DESTINATION_TYPE_QUEUE );
+        info.put("asyncDBSize", serverInfo.getAsyncDBSize());
+        info.put("connectionCount", serverInfo.getConnectionCount());
+        info.put("consumerCount", serverInfo.getConsumerCount());
+        info.put("diskReadOperationsRate", serverInfo.getDiskReadOperationsRate());
+        info.put("diskReadRate", serverInfo.getDiskReadRate());
+        info.put("diskWriteOperationsRate", serverInfo.getDiskWriteOperationsRate());
+        info.put("diskWriteRate", serverInfo.getDiskWriteRate());
+        info.put("durableCount", serverInfo.getDurableCount());
+        info.put("inboundBytesRate", serverInfo.getInboundBytesRate());
+        info.put("inboundMessageCount", serverInfo.getInboundMessageCount());
+        info.put("inboundMessageRate", serverInfo.getInboundMessageRate());
+        info.put("maxConnections", serverInfo.getMaxConnections());
+        info.put("maxMsgMemory", serverInfo.getMaxMsgMemory());
+        info.put("msgMem", serverInfo.getMsgMem());
+        info.put("msgMemPooled", serverInfo.getMsgMemPooled());
+        info.put("outboundBytesRate", serverInfo.getOutboundBytesRate());
+        info.put("outboundMessageCount", serverInfo.getOutboundMessageCount());
+        info.put("outboundMessageRate", serverInfo.getOutboundMessageRate());
+        info.put("pendingMessageCount", serverInfo.getPendingMessageCount());
+        info.put("pendingMessageSize", serverInfo.getPendingMessageSize());
+        info.put("producerCount", serverInfo.getProducerCount());
+        info.put("queueCount", serverInfo.getQueueCount());
+        info.put("reserveMemory", serverInfo.getReserveMemory());
+        info.put("sessionCount", serverInfo.getSessionCount());
+        info.put("syncDBSize", serverInfo.getSyncDBSize());
+        info.put("topicCount", serverInfo.getTopicCount());
 
-        info.put("queues", queues);
+        // TODO: pass pattern
+        QueueInfo[] queueInfos = this.admin.getQueuesStatistics();
+
+        if (queueInfos.length > 0) {
+          RubyArray queues = destinationsHash( runtime, queueInfos, DESTINATION_TYPE_QUEUE );
+
+          info.put("queues", queues);
+        }
+
+        // TODO: pass pattern
+        TopicInfo[] topicInfos = this.admin.getTopicsStatistics();
+
+        if (topicInfos.length > 0) {
+          RubyArray topics = destinationsHash( runtime, topicInfos, DESTINATION_TYPE_TOPIC );
+
+          info.put("topics", topics);
+        }
+
+        info.put("stores", get_storeinfo( context ));
       }
-
-      // TODO: pass pattern
-      TopicInfo[] topicInfos = this.admin.getTopicsStatistics();
-
-      if (topicInfos.length > 0) {
-        RubyArray topics = destinationsHash( runtime, topicInfos, DESTINATION_TYPE_TOPIC );
-
-        info.put("topics", topics);
-      }
-
-      info.put("stores", get_storeinfo( context ));
 
     } catch (TibjmsAdminException exp) {
       throw exp;
